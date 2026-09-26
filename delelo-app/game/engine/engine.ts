@@ -2,6 +2,7 @@ import type { Effect, GameAction } from "@/types/game";
 import { useGameStore } from "@/game/state/store";
 import { applyEffects } from "./effects";
 import { SCENES } from "@/game/data/scenes";
+import { getLocationById } from "@/game/data/locations";
 
 /* ============================================================
  * Game Engine — единственная точка входа для UI.
@@ -22,6 +23,10 @@ interface ApplyEffectsPayload {
 
 interface CompleteScenePayload {
   sceneId: string;
+}
+
+interface SelectLocationPayload {
+  locationId: string;
 }
 
 function getStateData() {
@@ -107,6 +112,41 @@ export function dispatch(action: GameAction): void {
           expensesToday: 0,
         },
       });
+      break;
+    }
+
+    /* ---- TASK 02: выбор помещения ------------------------------------
+     * UI отправляет только SELECT_LOCATION { locationId }.
+     * Engine сам строит список effects (данные локации — из Game Data):
+     * set_location → set_rent → pay_deposit (списание депозита с баланса)
+     * → flag premises_selected → завершение сцены intro_location.
+     * Месячная аренда — отдельное обязательство, повторно не списывается.
+     * ------------------------------------------------------------------ */
+    case "SELECT_LOCATION": {
+      const payload = action.payload as SelectLocationPayload | undefined;
+      const locationId = payload?.locationId ?? "";
+      const data = getStateData();
+      if (!data.location.selectedPremisesId && data.completedScenes.includes("scene_location_selected")) {
+        break; // помещение уже выбрано — повторный выбор невозможен
+      }
+      const loc = getLocationById(locationId);
+      if (!loc) break;
+      if (loc.deposit > data.finance.money) {
+        store.pushNotification(`Недостаточно средств для депозита: нужно ${loc.deposit.toLocaleString("ru-RU")} ₽.`);
+        break;
+      }
+
+      const next = applyEffects(data, [
+        { type: "set_location", locationId: loc.id },
+        { type: "set_rent", monthlyRent: loc.rent },
+        { type: "pay_deposit", amount: loc.deposit },
+        { type: "flag", key: "premises_selected", value: true },
+        { type: "flag", key: `location_selected:${loc.id}`, value: true },
+      ]);
+      store.setStateData(next);
+      store.pushNotification(
+        `Помещение «${loc.name}» выбрано. Депозит ${loc.deposit.toLocaleString("ru-RU")} ₽ оплачен. Аренда ${loc.rent.toLocaleString("ru-RU")} ₽/мес — обязательство.`
+      );
       break;
     }
 

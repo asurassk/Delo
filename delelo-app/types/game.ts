@@ -24,6 +24,10 @@ export interface BusinessState {
   type: BusinessType;
   status: BusinessStatus;
   opened: boolean;
+  /** Ежемесячная аренда выбранного помещения (обязательство, ₽/мес). */
+  monthlyRent: number;
+  /** Депозит, уплаченный при выборе помещения (₽). */
+  securityDepositPaid: number;
 }
 
 export interface FinanceState {
@@ -33,10 +37,37 @@ export interface FinanceState {
   expensesToday: number;
 }
 
+/* ---------- Локации (статические игровые данные) ---------- */
+
+export interface LocationInfo {
+  id: string;
+  name: string;
+  /** ₽ в месяц. */
+  rent: number;
+  /** 1..5 */
+  traffic: number;
+  /** 1..5 */
+  competition: number;
+  /** 1..5 */
+  logistics: number;
+  audience: string;
+  /** м² */
+  areaSqm: number;
+  /** депозит = одна месячная аренда */
+  deposit: number;
+}
+
 export interface LocationState {
   selectedPremisesId: string | null;
   rent: number;
   address: string | null;
+  /** Название выбранной локации для отображения в UI. */
+  name: string | null;
+  traffic: number;
+  competition: number;
+  logistics: number;
+  audience: string | null;
+  areaSqm: number;
 }
 
 export interface Employee {
@@ -109,7 +140,13 @@ export type Effect =
   | { type: "relationship"; target: string; delta: number }
   | { type: "risk"; delta: number }
   | { type: "inventory"; itemId: string; delta: number }
-  | { type: "flag"; key: string; value: boolean };
+  | { type: "flag"; key: string; value: boolean }
+  /** Установить выбранное помещение (локацию) в GameState. */
+  | { type: "set_location"; locationId: string }
+  /** Зафиксировать ежемесячную аренду как обязательство бизнеса. */
+  | { type: "set_rent"; monthlyRent: number }
+  /** Зафиксировать уплаченный депозит. */
+  | { type: "pay_deposit"; amount: number };
 
 export type ActionKind =
   | "START_GAME"
@@ -117,6 +154,7 @@ export type ActionKind =
   | "APPLY_EFFECTS"
   | "COMPLETE_SCENE"
   | "ADVANCE_DAY"
+  | "SELECT_LOCATION"
   | "RESET_GAME";
 
 /* Игровое действие: UI отправляет Action → Engine обрабатывает → State меняется */
