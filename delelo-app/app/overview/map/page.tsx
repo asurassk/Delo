@@ -1,5 +1,11 @@
-import PlaceholderScreen from "@/components/ui/PlaceholderScreen";
+import LocationScene from "@/components/game/LocationScene";
+
+/* ============================================================
+ * /overview/map — TASK 02: рабочая карта города.
+ * Здесь игрок проходит первую сюжетную сцену «Первая точка»
+ * и выбирает помещение.
+ * ============================================================ */
 
 export default function MapPage() {
-  return <PlaceholderScreen title="Map" section="Карта города и выбор помещения появятся на следующих этапах." />;
+  return <LocationScene />;
 }

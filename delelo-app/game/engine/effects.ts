@@ -1,4 +1,5 @@
 import type { Effect, GameStateData } from "@/types/game";
+import { getLocationById } from "@/game/data/locations";
 
 /* ============================================================
  * Effects reducer — чистая функция, применяющая массив effects
@@ -73,6 +74,51 @@ export function applyEffects(
       }
       case "flag": {
         next = { ...next, flags: { ...next.flags, [effect.key]: effect.value } };
+        break;
+      }
+      case "set_location": {
+        /* Данные локации берутся из Game Data — effects остаются чистыми. */
+        const loc = getLocationById(effect.locationId);
+        if (loc) {
+          next = {
+            ...next,
+            location: {
+              selectedPremisesId: loc.id,
+              rent: loc.rent,
+              address: loc.name,
+              name: loc.name,
+              traffic: loc.traffic,
+              competition: loc.competition,
+              logistics: loc.logistics,
+              audience: loc.audience,
+              areaSqm: loc.areaSqm,
+            },
+            business: { ...next.business, status: "preparation" },
+          };
+        }
+        break;
+      }
+      case "set_rent": {
+        next = {
+          ...next,
+          business: { ...next.business, monthlyRent: effect.monthlyRent },
+        };
+        break;
+      }
+      case "pay_deposit": {
+        /* Депозит: фиксируем сумму и списываем с баланса один раз. */
+        next = {
+          ...next,
+          business: {
+            ...next.business,
+            securityDepositPaid: next.business.securityDepositPaid + effect.amount,
+          },
+          finance: {
+            ...next.finance,
+            money: next.finance.money - effect.amount,
+            expensesToday: next.finance.expensesToday + effect.amount,
+          },
+        };
         break;
       }
     }

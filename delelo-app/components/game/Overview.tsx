@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import Card from "@/components/ui/Card";
 import { useGameStore } from "@/game/state/store";
 import { formatMoney, statusLabel } from "@/game/data/format";
@@ -15,6 +16,7 @@ import { STARTER_TASKS } from "@/game/data/scenes";
 export default function Overview() {
   const business = useGameStore((s) => s.business);
   const finance = useGameStore((s) => s.finance);
+  const location = useGameStore((s) => s.location);
   const flags = useGameStore((s) => s.flags);
   const notifications = useGameStore((s) => s.notifications);
   const reputation = useGameStore((s) => s.reputation);
@@ -23,6 +25,11 @@ export default function Overview() {
   const suppliers = useGameStore((s) => s.suppliers);
 
   const displayName = business.name || "Мой бизнес";
+
+  /* Следующая активная задача — state-driven, не статичный текст. */
+  const nextTask = STARTER_TASKS.find(
+    (t) => !(t.doneFlag ? flags[t.doneFlag] : false)
+  );
 
   return (
     <div className="space-y-6">
@@ -42,9 +49,15 @@ export default function Overview() {
       {/* Ключевые показатели */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Card title="Баланс">
-          <div className="text-2xl font-bold text-slate-900">
+          <motion.div
+            key={finance.money}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35 }}
+            className="text-2xl font-bold text-slate-900"
+          >
             {formatMoney(finance.money)}
-          </div>
+          </motion.div>
         </Card>
         <Card title="День">
           <div className="text-2xl font-bold text-slate-900">{finance.day}</div>
@@ -55,6 +68,38 @@ export default function Overview() {
           </div>
         </Card>
       </div>
+
+      {/* Локация и аренда (появляются после выбора помещения) */}
+      {location.selectedPremisesId && (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Card title="Локация">
+            <div className="text-xl font-bold text-slate-900">{location.name}</div>
+            <div className="mt-1 text-sm text-slate-500">
+              {location.audience} · {location.areaSqm} м²
+            </div>
+          </Card>
+          <Card title="Аренда">
+            <div className="text-xl font-bold text-amber-600">
+              {formatMoney(business.monthlyRent)} / месяц
+            </div>
+            <div className="mt-1 text-sm text-slate-500">
+              Депозит оплачен: {formatMoney(business.securityDepositPaid)}
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Следующая задача */}
+      {nextTask && (
+        <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 px-5 py-4">
+          <div className="text-xs font-semibold uppercase tracking-wider text-indigo-600">
+            Следующая задача
+          </div>
+          <div className="mt-1 text-base font-semibold text-slate-800">
+            {nextTask.text}
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Текущие задачи */}
@@ -125,7 +170,9 @@ export default function Overview() {
             </div>
             <div className="flex justify-between">
               <dt className="text-slate-500">Помещение</dt>
-              <dd className="font-medium text-slate-800">Не выбрано</dd>
+              <dd className="font-medium text-slate-800">
+                {location.name ?? "Не выбрано"}
+              </dd>
             </div>
           </dl>
         </Card>
