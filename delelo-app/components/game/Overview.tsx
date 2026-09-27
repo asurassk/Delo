@@ -1,17 +1,9 @@
-"use client";
+﻿"use client";
 
-import { motion } from "framer-motion";
 import Card from "@/components/ui/Card";
 import { useGameStore } from "@/game/state/store";
 import { formatMoney, statusLabel } from "@/game/data/format";
 import { STARTER_TASKS } from "@/game/data/scenes";
-
-/* ============================================================
- * Overview — главный экран игры.
- * Показывает: название бизнеса, баланс, день, статус,
- * текущие задачи, последние уведомления и краткую сводку.
- * Только читает состояние; изменения — через Game Engine.
- * ============================================================ */
 
 export default function Overview() {
   const business = useGameStore((s) => s.business);
@@ -26,14 +18,12 @@ export default function Overview() {
 
   const displayName = business.name || "Мой бизнес";
 
-  /* Следующая активная задача — state-driven, не статичный текст. */
   const nextTask = STARTER_TASKS.find(
     (t) => !(t.doneFlag ? flags[t.doneFlag] : false)
   );
 
   return (
     <div className="space-y-6">
-      {/* Шапка */}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">{displayName}</h1>
@@ -46,22 +36,22 @@ export default function Overview() {
         </span>
       </div>
 
-      {/* Ключевые показатели */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Card title="Баланс">
-          <motion.div
-            key={finance.money}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.35 }}
-            className="text-2xl font-bold text-slate-900"
-          >
-            {formatMoney(finance.money)}
-          </motion.div>
+         <div
+  key={finance.money}
+  className="text-2xl font-bold text-slate-900 transition-all duration-300"
+>
+  {formatMoney(finance.money)}
+</div>
         </Card>
+
         <Card title="День">
-          <div className="text-2xl font-bold text-slate-900">{finance.day}</div>
+          <div className="text-2xl font-bold text-slate-900">
+            {finance.day}
+          </div>
         </Card>
+
         <Card title="Статус">
           <div className="text-2xl font-bold text-slate-900">
             {statusLabel(business.status)}
@@ -69,15 +59,17 @@ export default function Overview() {
         </Card>
       </div>
 
-      {/* Локация и аренда (появляются после выбора помещения) */}
       {location.selectedPremisesId && (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Card title="Локация">
-            <div className="text-xl font-bold text-slate-900">{location.name}</div>
+            <div className="text-xl font-bold text-slate-900">
+              {location.name}
+            </div>
             <div className="mt-1 text-sm text-slate-500">
               {location.audience} · {location.areaSqm} м²
             </div>
           </Card>
+
           <Card title="Аренда">
             <div className="text-xl font-bold text-amber-600">
               {formatMoney(business.monthlyRent)} / месяц
@@ -89,7 +81,6 @@ export default function Overview() {
         </div>
       )}
 
-      {/* Следующая задача */}
       {nextTask && (
         <div className="rounded-xl border border-indigo-100 bg-indigo-50/60 px-5 py-4">
           <div className="text-xs font-semibold uppercase tracking-wider text-indigo-600">
@@ -102,11 +93,11 @@ export default function Overview() {
       )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Текущие задачи */}
         <Card title="Текущие задачи" className="lg:col-span-1">
           <ul className="space-y-2">
             {STARTER_TASKS.map((task) => {
               const done = task.doneFlag ? flags[task.doneFlag] : false;
+
               return (
                 <li key={task.id} className="flex items-start gap-2 text-sm">
                   <span
@@ -118,7 +109,14 @@ export default function Overview() {
                   >
                     ✓
                   </span>
-                  <span className={done ? "text-slate-400 line-through" : "text-slate-700"}>
+
+                  <span
+                    className={
+                      done
+                        ? "text-slate-400 line-through"
+                        : "text-slate-700"
+                    }
+                  >
                     {task.text}
                   </span>
                 </li>
@@ -127,7 +125,6 @@ export default function Overview() {
           </ul>
         </Card>
 
-        {/* Уведомления */}
         <Card title="Последние уведомления" className="lg:col-span-1">
           {notifications.length === 0 ? (
             <p className="text-sm text-slate-400">Пока пусто.</p>
@@ -145,29 +142,41 @@ export default function Overview() {
           )}
         </Card>
 
-        {/* О бизнесе */}
         <Card title="О бизнесе" className="lg:col-span-1">
           <dl className="space-y-2 text-sm">
             <div className="flex justify-between">
               <dt className="text-slate-500">Тип</dt>
               <dd className="font-medium text-slate-800">Кофейня</dd>
             </div>
+
             <div className="flex justify-between">
               <dt className="text-slate-500">Репутация</dt>
-              <dd className="font-medium text-slate-800">{reputation} / 100</dd>
+              <dd className="font-medium text-slate-800">
+                {reputation} / 100
+              </dd>
             </div>
+
             <div className="flex justify-between">
               <dt className="text-slate-500">Уровень риска</dt>
-              <dd className="font-medium text-slate-800">{risk} / 100</dd>
+              <dd className="font-medium text-slate-800">
+                {risk} / 100
+              </dd>
             </div>
+
             <div className="flex justify-between">
               <dt className="text-slate-500">Сотрудники</dt>
-              <dd className="font-medium text-slate-800">{employees.length}</dd>
+              <dd className="font-medium text-slate-800">
+                {employees.length}
+              </dd>
             </div>
+
             <div className="flex justify-between">
               <dt className="text-slate-500">Поставщики</dt>
-              <dd className="font-medium text-slate-800">{suppliers.length}</dd>
+              <dd className="font-medium text-slate-800">
+                {suppliers.length}
+              </dd>
             </div>
+
             <div className="flex justify-between">
               <dt className="text-slate-500">Помещение</dt>
               <dd className="font-medium text-slate-800">

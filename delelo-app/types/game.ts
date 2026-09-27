@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
  * ДЕЛО — базовые игровые типы
  * Этот слой не зависит от UI и движка.
  * ============================================================ */
@@ -6,11 +6,11 @@
 export type BusinessType = "coffee_shop";
 
 export type BusinessStatus =
-  | "idea" // идея
-  | "preparation" // подготовка
-  | "registered" // зарегистрирован
-  | "open" // работает
-  | "closed"; // закрыт
+  | "idea"
+  | "preparation"
+  | "registered"
+  | "open"
+  | "closed";
 
 export type DocumentStatus = "none" | "submitted" | "approved" | "rejected";
 
@@ -24,9 +24,7 @@ export interface BusinessState {
   type: BusinessType;
   status: BusinessStatus;
   opened: boolean;
-  /** Ежемесячная аренда выбранного помещения (обязательство, ₽/мес). */
   monthlyRent: number;
-  /** Депозит, уплаченный при выборе помещения (₽). */
   securityDepositPaid: number;
 }
 
@@ -37,23 +35,15 @@ export interface FinanceState {
   expensesToday: number;
 }
 
-/* ---------- Локации (статические игровые данные) ---------- */
-
 export interface LocationInfo {
   id: string;
   name: string;
-  /** ₽ в месяц. */
   rent: number;
-  /** 1..5 */
   traffic: number;
-  /** 1..5 */
   competition: number;
-  /** 1..5 */
   logistics: number;
   audience: string;
-  /** м² */
   areaSqm: number;
-  /** депозит = одна месячная аренда */
   deposit: number;
 }
 
@@ -61,7 +51,6 @@ export interface LocationState {
   selectedPremisesId: string | null;
   rent: number;
   address: string | null;
-  /** Название выбранной локации для отображения в UI. */
   name: string | null;
   traffic: number;
   competition: number;
@@ -82,7 +71,7 @@ export interface Supplier {
   id: string;
   name: string;
   category: string;
-  relationship: number; // 0..100
+  relationship: number;
   active: boolean;
 }
 
@@ -110,7 +99,7 @@ export interface GameDocument {
 export interface RelationshipState {
   id: string;
   label: string;
-  value: number; // 0..100
+  value: number;
 }
 
 export interface ActiveEvent {
@@ -132,7 +121,7 @@ export interface Notification {
   day: number;
 }
 
-/* ---------- Effects (изменения состояния, применяемые движком) ---------- */
+/* ---------- Effects ---------- */
 
 export type Effect =
   | { type: "money"; delta: number }
@@ -141,11 +130,8 @@ export type Effect =
   | { type: "risk"; delta: number }
   | { type: "inventory"; itemId: string; delta: number }
   | { type: "flag"; key: string; value: boolean }
-  /** Установить выбранное помещение (локацию) в GameState. */
   | { type: "set_location"; locationId: string }
-  /** Зафиксировать ежемесячную аренду как обязательство бизнеса. */
   | { type: "set_rent"; monthlyRent: number }
-  /** Зафиксировать уплаченный депозит. */
   | { type: "pay_deposit"; amount: number };
 
 export type ActionKind =
@@ -157,7 +143,6 @@ export type ActionKind =
   | "SELECT_LOCATION"
   | "RESET_GAME";
 
-/* Игровое действие: UI отправляет Action → Engine обрабатывает → State меняется */
 export interface GameAction {
   kind: ActionKind;
   payload?: unknown;

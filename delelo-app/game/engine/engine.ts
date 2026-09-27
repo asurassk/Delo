@@ -2,16 +2,6 @@ import type { Effect, GameAction } from "@/types/game";
 import { useGameStore } from "@/game/state/store";
 import { applyEffects } from "./effects";
 import { SCENES } from "@/game/data/scenes";
-import { getLocationById } from "@/game/data/locations";
-
-/* ============================================================
- * Game Engine — единственная точка входа для UI.
- *
- * Схема:  UI → dispatch(Action) → Engine → Store → UI
- *
- * Компоненты никогда не вызывают store-мутации напрямую,
- * они отправляют действия в движок.
- * ============================================================ */
 
 interface SetBusinessNamePayload {
   name: string;
@@ -31,7 +21,7 @@ interface SelectLocationPayload {
 
 function getStateData() {
   const s = useGameStore.getState();
-  // только игровые данные, без функций/флагов гидратации
+
   return {
     player: s.player,
     business: s.business,
@@ -61,45 +51,140 @@ export function dispatch(action: GameAction): void {
   switch (action.kind) {
     case "START_GAME": {
       store.setStateData({ started: true });
-      store.pushNotification("Игра начата. Придумайте название бизнесу.");
+      store.pushNotification(
+        "Игра начата. Придумайте название бизнесу."
+      );
       break;
     }
 
     case "SET_BUSINESS_NAME": {
-      const name = ((action.payload as SetBusinessNamePayload)?.name ?? "").trim();
+      const name =
+        ((action.payload as SetBusinessNamePayload)?.name ?? "").trim();
+
       if (!name) break;
+
       const next = applyEffects(getStateData(), [
         { type: "flag", key: "name_set", value: true },
       ]);
+
       store.setStateData({
-        business: { ...store.business, name, status: "preparation" },
+        business: {
+          ...store.business,
+          name,
+          status: "preparation",
+        },
         flags: next.flags,
       });
-      store.pushNotification(`Бизнес «${name}» зарегистрирован как идея. Статус: подготовка.`);
+
+      store.pushNotification(
+        `Бизнес «${name}» зарегистрирован как идея. Статус: подготовка.`
+      );
       break;
     }
 
     case "APPLY_EFFECTS": {
-      const effects = (action.payload as ApplyEffectsPayload)?.effects ?? [];
+      const effects =
+        (action.payload as ApplyEffectsPayload)?.effects ?? [];
+
       const next = applyEffects(getStateData(), effects);
       store.setStateData(next);
       break;
     }
 
+    case "SELECT_LOCATION": {
+      const locationId = (
+        action.payload as SelectLocationPayload
+      )?.locationId;
+
+      if (!locationId) break;
+
+      const state = getStateData();
+
+      const next = applyEffects(state, [
+        {
+          type: "set_location",
+          locationId,
+        },
+      ]);
+
+      const rent = next.location.rent;
+
+      if (!rent) break;
+
+      const location = next.location;
+
+      const deposit = rent;
+
+      if (next.finance.money < deposit) {
+        store.pushNotification(
+          "Недостаточно денег для оплаты депозита."
+        );
+        break;
+      }
+
+      const finalState = applyEffects(next, [
+        {
+          type: "set_rent",
+          monthlyRent: rent,
+        },
+        {
+          type: "pay_deposit",
+          amount: deposit,
+        },
+        {
+          type: "flag",
+          key: "premises_selected",
+          value: true,
+        },
+        {
+          type: "flag",
+          key: `location_selected:${locationId}`,
+          value: true,
+        },
+      ]);
+
+      store.setStateData(finalState);
+
+      store.pushNotification(
+        `Выбрано помещение: ${location.name}. Депозит: ${deposit.toLocaleString(
+          "ru-RU"
+        )} ₽.`
+      );
+
+      break;
+    }
+
     case "COMPLETE_SCENE": {
-      const sceneId = (action.payload as CompleteScenePayload)?.sceneId;
+      const sceneId = (
+        action.payload as CompleteScenePayload
+      )?.sceneId;
+
       if (!sceneId) break;
+
       const scene = SCENES[sceneId];
+
       if (!scene) break;
+
       if (getStateData().completedScenes.includes(sceneId)) break;
 
-      const next = applyEffects(getStateData(), scene.effects);
+      const next = applyEffects(
+        getStateData(),
+        scene.effects
+      );
+
       store.setStateData({
         ...next,
-        completedScenes: [...getStateData().completedScenes, sceneId],
+        completedScenes: [
+          ...getStateData().completedScenes,
+          sceneId,
+        ],
         currentSceneId: null,
       });
-      store.pushNotification(`Сцена завершена: ${scene.title}`);
+
+      store.pushNotification(
+        `Сцена завершена: ${scene.title}`
+      );
+
       break;
     }
 
@@ -112,41 +197,7 @@ export function dispatch(action: GameAction): void {
           expensesToday: 0,
         },
       });
-      break;
-    }
 
-    /* ---- TASK 02: выбор помещения ------------------------------------
-     * UI отправляет только SELECT_LOCATION { locationId }.
-     * Engine сам строит список effects (данные локации — из Game Data):
-     * set_location → set_rent → pay_deposit (списание депозита с баланса)
-     * → flag premises_selected → завершение сцены intro_location.
-     * Месячная аренда — отдельное обязательство, повторно не списывается.
-     * ------------------------------------------------------------------ */
-    case "SELECT_LOCATION": {
-      const payload = action.payload as SelectLocationPayload | undefined;
-      const locationId = payload?.locationId ?? "";
-      const data = getStateData();
-      if (!data.location.selectedPremisesId && data.completedScenes.includes("scene_location_selected")) {
-        break; // помещение уже выбрано — повторный выбор невозможен
-      }
-      const loc = getLocationById(locationId);
-      if (!loc) break;
-      if (loc.deposit > data.finance.money) {
-        store.pushNotification(`Недостаточно средств для депозита: нужно ${loc.deposit.toLocaleString("ru-RU")} ₽.`);
-        break;
-      }
-
-      const next = applyEffects(data, [
-        { type: "set_location", locationId: loc.id },
-        { type: "set_rent", monthlyRent: loc.rent },
-        { type: "pay_deposit", amount: loc.deposit },
-        { type: "flag", key: "premises_selected", value: true },
-        { type: "flag", key: `location_selected:${loc.id}`, value: true },
-      ]);
-      store.setStateData(next);
-      store.pushNotification(
-        `Помещение «${loc.name}» выбрано. Депозит ${loc.deposit.toLocaleString("ru-RU")} ₽ оплачен. Аренда ${loc.rent.toLocaleString("ru-RU")} ₽/мес — обязательство.`
-      );
       break;
     }
 
@@ -157,7 +208,9 @@ export function dispatch(action: GameAction): void {
   }
 }
 
-/** Вспомогательная отправка effects из UI (например, из сцен событий). */
 export function applyEffectsAction(effects: Effect[]): void {
-  dispatch({ kind: "APPLY_EFFECTS", payload: { effects } });
+  dispatch({
+    kind: "APPLY_EFFECTS",
+    payload: { effects },
+  });
 }

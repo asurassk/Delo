@@ -1,4 +1,4 @@
-import LocationScene from "@/components/game/LocationScene";
+﻿import LocationScene from "@/components/game/LocationScene";
 
 /* ============================================================
  * /overview/map — TASK 02: рабочая карта города.

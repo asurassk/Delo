@@ -1,12 +1,5 @@
 import type { LocationInfo } from "@/types/game";
 
-/* ============================================================
- * Game Data — помещения условного города.
- * Статические игровые данные: UI и Engine читают их,
- * но не изменяют. Выбранное помещение сохраняется в GameState
- * через эффект set_location.
- * ============================================================ */
-
 export const LOCATIONS: LocationInfo[] = [
   {
     id: "gallery_mall",
@@ -66,5 +59,5 @@ export const LOCATIONS: LocationInfo[] = [
 ];
 
 export function getLocationById(id: string): LocationInfo | undefined {
-  return LOCATIONS.find((l) => l.id === id);
+  return LOCATIONS.find((location) => location.id === id);
 }
